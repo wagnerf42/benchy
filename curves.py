@@ -6,33 +6,57 @@ def lines(filename):
         for line in data:
             if line[0] == '#':
                 continue
-            content = line.split()
+            content = line.split(",")
             nums = list(int(e) for e in content)
             yield nums
 
 def main():
-    wanted = int(argv[1])
-    algorithms_number = len(next(lines("0"))) - 2
-    times = [[[] for _ in range(algorithms_number)] for _ in range(10)]
-    for threads in range(10):
-        for size, _, *timings in lines("{}".format(threads)):
-            if size == wanted:
-                for store, time in zip(times[threads], timings):
-                    store.append(time)
+    log_files = argv[1:]
+    algorithms_number = len(next(lines(log_files[1])))
+    times = [[[] for _ in range(algorithms_number)] for _ in range(len(log_files))]
+    for threads, data_file in enumerate(log_files):
+        for timings in lines(data_file):
+            for store, time in zip(times[threads], timings):
+                store.append(time)
+    # we create a 2d array
+    # for each thread number the average running time for each algorithm
+    averages = [
+        [
+            sum(algo) / len(algo)
+            for algo in fixed_thread[1:]
+        ]
+        for fixed_thread in times
+    ]
+    medians = [
+        [
+            sorted(algo)[len(algo)//2]
+            for algo in fixed_thread[1:]
+        ]
+        for fixed_thread in times
+    ]
+    average_speedups = [
+        [
+            sum(s/a for s, a in zip(fixed_thread[0], algo)) / len(algo)
+            for algo in fixed_thread[1:]
+        ]
+        for fixed_thread in times
+    ]
+    median_speedups = [
+        [
+            sorted(s/a for s, a in zip(fixed_thread[0], algo))[len(algo)//2]
+            for algo in fixed_thread[1:]
+        ]
+        for fixed_thread in times
+    ]
+    save("averages.csv", averages)
+    save("medians.csv", medians)
+    save("average_speedups.csv", average_speedups)
+    save("median_speedups.csv", median_speedups)
 
-    size = len(times[0][0])
-    with open("averages_{}.dat".format(wanted), "w") as av:
-        with open("medians_{}.dat".format(wanted), "w") as med:
-            for i, timings in enumerate(times):
-                for timing in timings:
-                    timing.sort()
-                averages = (sum(t) / size for t in timings)
-                medians = (t[size//2] for t in timings)
-                print(i+1, *averages, file=av)
-                print(i+1, *medians, file=med)
-
-
-
+def save(filename, data):
+    with open(filename, "w") as f:
+        for thread, times in enumerate(data):
+            print("{},{}".format(thread+1, ",".join(str(t) for t in times)), file=f)
 
 
 main()
