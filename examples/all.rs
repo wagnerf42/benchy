@@ -10,28 +10,26 @@ fn log(t: usize) -> usize {
 }
 
 fn main() {
-    let threads_string = std::env::args().nth(1).expect("we need a number of threads");
-    let threads:usize = threads_string.parse::<usize>().unwrap();
+    let threads_string = std::env::args()
+        .nth(1)
+        .expect("we need a number of threads");
+    let threads: usize = threads_string.parse::<usize>().unwrap();
     let output = format!("log_all_{}.csv", threads);
     benchy::Bencher::new()
         .setup(|| {
-            let mut input = vec![true ; 100_000_000];
+            let mut input = vec![true; 100_000_000];
             *input.choose_mut(&mut rand::thread_rng()).unwrap() = false;
             input
         })
-        .postprocess(|r:bool| assert!(!r))
-        .balgorithm("seq", &|input| {
-            input.iter().all(|x| *x)
-        })
+        .postprocess(|r: bool| assert!(!r))
+        .balgorithm("seq", &|input| input.iter().all(|x| *x))
         .balgorithm("size_limit", &|input| {
             input.par_iter().size_limit(SIZE_CAP).all(|x| *x)
         })
         .balgorithm("rayon", &|input| {
             input.par_iter().rayon(log(threads)).all(|x| *x)
         })
-        .balgorithm("adaptive", &|input| {
-            input.par_iter().adaptive().all(|x| *x)
-        })
+        .balgorithm("adaptive", &|input| input.par_iter().adaptive().all(|x| *x))
         .balgorithm("blocks_size_limit", &|input| {
             input
                 .par_iter()
@@ -59,6 +57,6 @@ fn main() {
                 .adaptive()
                 .all(|x| *x)
         })
-        .run(10, output)
+        .run(300, output)
         .expect("failed to save logs");
 }
