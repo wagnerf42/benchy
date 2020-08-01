@@ -1,18 +1,21 @@
+//! all bench with random target
 use kvik::prelude::*;
 use rand::prelude::*;
 
 const SIZE_CAP: usize = 100_000;
 
+// return rayon's initial counter for a given number of threads
+fn log(t: usize) -> usize {
+    (t as f64).log2().ceil() as usize + 1
+}
+
 fn main() {
-    let output = std::env::args().nth(1).expect("we need a filename");
-    let threads:usize = output.parse::<usize>().unwrap() + 1;
+    let threads_string = std::env::args().nth(1).expect("we need a number of threads");
+    let threads:usize = threads_string.parse::<usize>().unwrap();
+    let output = format!("log_all_{}.csv", threads);
     benchy::Bencher::new()
-        .parameters(vec![100_000_000usize])
-        // .parameters(vec![100_000_000usize, 200_000_000, 300_000_000])
-        //.setup(|s| ((0..s).collect::<Vec<usize>>(), s))
-        //.setup(|s| ((0..s).collect::<Vec<usize>>(), s/2-1))
-        .setup(|s| {
-            let mut input = vec![true ; s];
+        .setup(|| {
+            let mut input = vec![true ; 100_000_000];
             *input.choose_mut(&mut rand::thread_rng()).unwrap() = false;
             input
         })
@@ -20,10 +23,16 @@ fn main() {
         .balgorithm("seq", &|input| {
             input.iter().all(|x| *x)
         })
-        .balgorithm("no_blocks", &|input| {
+        .balgorithm("size_limit", &|input| {
             input.par_iter().size_limit(SIZE_CAP).all(|x| *x)
         })
-        .balgorithm("blocks", &|input| {
+        .balgorithm("rayon", &|input| {
+            input.par_iter().rayon(log(threads)).all(|x| *x)
+        })
+        .balgorithm("adaptive", &|input| {
+            input.par_iter().adaptive().all(|x| *x)
+        })
+        .balgorithm("blocks_size_limit", &|input| {
             input
                 .par_iter()
                 .by_blocks(std::iter::successors(Some(SIZE_CAP * threads), |s| {
@@ -32,6 +41,24 @@ fn main() {
                 .size_limit(SIZE_CAP)
                 .all(|x| *x)
         })
-        .run(100, output)
+        .balgorithm("blocks_rayon", &|input| {
+            input
+                .par_iter()
+                .by_blocks(std::iter::successors(Some(SIZE_CAP * threads), |s| {
+                    Some(s.saturating_mul(2))
+                }))
+                .rayon(log(threads))
+                .all(|x| *x)
+        })
+        .balgorithm("blocks_adaptive", &|input| {
+            input
+                .par_iter()
+                .by_blocks(std::iter::successors(Some(SIZE_CAP * threads), |s| {
+                    Some(s.saturating_mul(2))
+                }))
+                .adaptive()
+                .all(|x| *x)
+        })
+        .run(10, output)
         .expect("failed to save logs");
 }
