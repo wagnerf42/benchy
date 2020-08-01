@@ -69,12 +69,12 @@ fn main() {
         .expect("we need a number of threads");
     let threads: usize = threads_string.parse::<usize>().unwrap();
     bench(
-        &format!("log_find_random_{}.csv", threads),
+        &format!("log_find_random_{:02}.csv", threads),
         || rand::random::<usize>() % SIZE,
         threads,
     );
     bench(
-        &format!("log_find_mid_{}.csv", threads),
+        &format!("log_find_mid_{:02}.csv", threads),
         || SIZE / 2 - 1,
         threads,
     );

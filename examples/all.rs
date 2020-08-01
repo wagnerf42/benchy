@@ -14,7 +14,7 @@ fn main() {
         .nth(1)
         .expect("we need a number of threads");
     let threads: usize = threads_string.parse::<usize>().unwrap();
-    let output = format!("log_all_{}.csv", threads);
+    let output = format!("log_all_{:02}.csv", threads);
     benchy::Bencher::new()
         .setup(|| {
             let mut input = vec![true; 100_000_000];
