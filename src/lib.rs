@@ -60,8 +60,7 @@ impl<'a, S, P, I, R> Bencher<'a, S, P, I, R> {
     }
 }
 
-impl<'a, S, P, I, R>
-    Bencher<'a, S, P, I, R>
+impl<'a, S, P, I, R> Bencher<'a, S, P, I, R>
 where
     S: Fn() -> I,
     P: Fn(R),
@@ -79,13 +78,17 @@ where
         )?;
         for _ in 0..runs_number {
             let input = (self.setup)();
-            let out = self.balgorithms.iter().map(|a| {
-                let start = std::time::Instant::now();
-                let output = (a.1)(&input);
-                let end = start.elapsed();
-                (self.postprocess)(output);
-                end.as_nanos().to_string()
-            }).join(", ");
+            let out = self
+                .balgorithms
+                .iter()
+                .map(|a| {
+                    let start = std::time::Instant::now();
+                    let output = (a.1)(&input);
+                    let end = start.elapsed();
+                    (self.postprocess)(output);
+                    end.as_nanos().to_string()
+                })
+                .join(",");
             writeln!(output_file, "{}", out)?;
         }
         Ok(())

@@ -23,22 +23,16 @@ fn main() {
         })
         .postprocess(|r: bool| assert!(!r))
         .balgorithm("seq", &|input| input.iter().all(|x| *x))
-        .balgorithm("size_limit", &|input| {
-            input.par_iter().size_limit(SIZE_CAP).all(|x| *x)
+        .balgorithm("rayon_library", &|input| {
+            rayon::prelude::ParallelIterator::all(
+                rayon::prelude::IntoParallelIterator::into_par_iter(input),
+                |x| *x,
+            )
         })
         .balgorithm("rayon", &|input| {
             input.par_iter().rayon(log(threads)).all(|x| *x)
         })
         .balgorithm("adaptive", &|input| input.par_iter().adaptive().all(|x| *x))
-        .balgorithm("blocks_size_limit", &|input| {
-            input
-                .par_iter()
-                .by_blocks(std::iter::successors(Some(SIZE_CAP * threads), |s| {
-                    Some(s.saturating_mul(2))
-                }))
-                .size_limit(SIZE_CAP)
-                .all(|x| *x)
-        })
         .balgorithm("blocks_rayon", &|input| {
             input
                 .par_iter()

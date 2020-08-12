@@ -14,6 +14,17 @@ fn bench<T: Fn() -> usize>(filename: &str, target_selection: T, threads: usize) 
         .balgorithm("seq", &|&(ref input, target)| {
             (target, input.iter().find(|&e| *e == target).copied())
         })
+        .balgorithm("rayon_library", &|&(ref input, target): &(
+            Vec<usize>,
+            usize,
+        )| {
+            let f = rayon::prelude::ParallelIterator::find_first(
+                rayon::prelude::IntoParallelIterator::into_par_iter(input),
+                |num| **num == target,
+            )
+            .map(|something| *something);
+            (target, f)
+        })
         .balgorithm("rayon", &|&(ref input, target): &(Vec<usize>, usize)| {
             let f = input
                 .par_iter()
